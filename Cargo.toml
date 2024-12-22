@@ -1,0 +1,20 @@
+[package]
+name = "emplacement"
+version = "1.0.0"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yoshuawuyts/emplacement"
+documentation = "https://docs.rs/emplacement"
+description = "A prototype notation for placement new"
+readme = "README.md"
+edition = "2018"
+keywords = []
+categories = []
+authors = [
+    "Yoshua Wuyts <rust@yosh.is>"
+]
+
+[features]
+
+[dependencies]
+
+[dev-dependencies]
