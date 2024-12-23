@@ -1,7 +1,7 @@
-<h1 align="center">emplacement</h1>
+<h1 align="center">spati</h1>
 <div align="center">
   <strong>
-    A prototype notation for placement new
+    A prototype notation for referentially stable constructors
   </strong>
 </div>
 
@@ -9,17 +9,17 @@
 
 <div align="center">
   <!-- Crates version -->
-  <a href="https://crates.io/crates/emplacement">
-    <img src="https://img.shields.io/crates/v/emplacement.svg?style=flat-square"
+  <a href="https://crates.io/crates/spati">
+    <img src="https://img.shields.io/crates/v/spati.svg?style=flat-square"
     alt="Crates.io version" />
   </a>
   <!-- Downloads -->
-  <a href="https://crates.io/crates/emplacement">
-    <img src="https://img.shields.io/crates/d/emplacement.svg?style=flat-square"
+  <a href="https://crates.io/crates/spati">
+    <img src="https://img.shields.io/crates/d/spati.svg?style=flat-square"
       alt="Download" />
   </a>
   <!-- docs.rs docs -->
-  <a href="https://docs.rs/emplacement">
+  <a href="https://docs.rs/spati">
     <img src="https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square"
       alt="docs.rs docs" />
   </a>
@@ -27,15 +27,15 @@
 
 <div align="center">
   <h3>
-    <a href="https://docs.rs/emplacement">
+    <a href="https://docs.rs/spati">
       API Docs
     </a>
     <span> | </span>
-    <a href="https://github.com/yoshuawuyts/emplacement/releases">
+    <a href="https://github.com/yoshuawuyts/spati/releases">
       Releases
     </a>
     <span> | </span>
-    <a href="https://github.com/yoshuawuyts/emplacement/blob/master.github/CONTRIBUTING.md">
+    <a href="https://github.com/yoshuawuyts/spati/blob/master.github/CONTRIBUTING.md">
       Contributing
     </a>
   </h3>
@@ -43,7 +43,7 @@
 
 ## Installation
 ```sh
-$ cargo add emplacement
+$ cargo add spati
 ```
 
 ## Safety
@@ -57,9 +57,9 @@ look at some of these issues:
 - [Issues labeled "good first issue"][good-first-issue]
 - [Issues labeled "help wanted"][help-wanted]
 
-[contributing]: https://github.com/yoshuawuyts/emplacement/blob/master.github/CONTRIBUTING.md
-[good-first-issue]: https://github.com/yoshuawuyts/emplacement/labels/good%20first%20issue
-[help-wanted]: https://github.com/yoshuawuyts/emplacement/labels/help%20wanted
+[contributing]: https://github.com/yoshuawuyts/spati/blob/master.github/CONTRIBUTING.md
+[good-first-issue]: https://github.com/yoshuawuyts/spati/labels/good%20first%20issue
+[help-wanted]: https://github.com/yoshuawuyts/spati/labels/help%20wanted
 
 ## License
 

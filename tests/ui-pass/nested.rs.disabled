@@ -1,0 +1,21 @@
+#[spati::emplace]
+struct Bed {
+    #[emplace]
+    cat: Cat,
+}
+
+#[spati::emplace]
+struct Cat {
+    age: u8,
+}
+
+#[spati::emplace]
+impl Cat {
+    fn age(&self) -> &u8 {
+        &self.age
+    }
+}
+
+fn main() {
+    // let cat = spati::new!(Cat, 12);
+}
