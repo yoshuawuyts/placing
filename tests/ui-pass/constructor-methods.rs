@@ -4,7 +4,7 @@ struct Cat {
 
 #[spati::spati]
 impl Cat {
-    // #[super]
+    #[super]
     fn new(age: u8) -> Self {
         Self { age }
     }

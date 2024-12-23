@@ -1,0 +1,7 @@
+error: `[spati, E0002] trait impls unsupported: macro `spati` can only be used on bare `impl {}` blocks
+ --> tests/ui-fail/E0002-trait-impls-unsupported.rs:7:1
+  |
+7 | #[spati::spati]
+  | ^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `spati::spati` (in Nightly builds, run with -Z macro-backtrace for more info)
