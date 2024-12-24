@@ -16,11 +16,7 @@ use syn::parse_macro_input;
 
 mod inherent_impl;
 mod strukt;
-
-// return quote::quote_spanned! {
-//     attr.span() => compile_error!("`[spati, E0001] wrong item kind,\nmacro `spati` can only be used on `impl {{}}` blocks");
-// }
-// .into();
+mod utils;
 
 /// Enable methods to be constructed and operate in-place
 #[proc_macro_attribute]
@@ -30,7 +26,7 @@ pub fn spati(_attr: TokenStream, item: TokenStream) -> TokenStream {
         syn::Item::Impl(item) => inherent_impl::process_impl(item),
         syn::Item::Struct(item) => strukt::process_struct(item),
         _ => quote::quote! {
-            compile_error!("`[spati, E0001] wrong item kind: macro `spati` can only be used on inherent impls and structs");
+            compile_error!("`[spati, E0001] invalid item kind: macro `spati` can only be used on inherent impls and structs");
         }.into()
     }
 }
