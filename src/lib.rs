@@ -14,7 +14,7 @@
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
-mod inherent_impl;
+mod inherent;
 mod strukt;
 mod utils;
 
@@ -23,7 +23,7 @@ mod utils;
 pub fn spati(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as syn::Item);
     match item {
-        syn::Item::Impl(item) => inherent_impl::process_impl(item),
+        syn::Item::Impl(item) => inherent::process_impl(item),
         syn::Item::Struct(item) => strukt::process_struct(item),
         _ => quote::quote! {
             compile_error!("`[spati, E0001] invalid item kind: macro `spati` can only be used on inherent impls and structs");
