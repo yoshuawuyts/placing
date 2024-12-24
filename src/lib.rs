@@ -1,4 +1,11 @@
-//! A prototype notation for placement new
+//! A prototype notation for referentially stable constructors
+//!
+//! ## Tasks
+//!
+//! - [ ] support structs
+//! - [ ] support enums
+//! - [ ] support traits
+//! - [ ] support custom drop impls
 
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
@@ -8,6 +15,7 @@ use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
 mod inherent_impl;
+mod strukt;
 
 // return quote::quote_spanned! {
 //     attr.span() => compile_error!("`[spati, E0001] wrong item kind,\nmacro `spati` can only be used on `impl {{}}` blocks");
@@ -19,9 +27,10 @@ mod inherent_impl;
 pub fn spati(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as syn::Item);
     match item {
-        syn::Item::Impl(impl_item) => inherent_impl::process_impl(impl_item),
+        syn::Item::Impl(item) => inherent_impl::process_impl(item),
+        syn::Item::Struct(item) => strukt::process_struct(item),
         _ => quote::quote! {
-            compile_error!("`[spati, E0001] wrong item kind: macro `spati` can only be used on `impl {}` blocks");
+            compile_error!("`[spati, E0001] wrong item kind: macro `spati` can only be used on inherent impls and structs");
         }.into()
     }
 }

@@ -1,4 +1,4 @@
-error: `[spati, E0001] wrong item kind: macro `spati` can only be used on `impl {}` blocks
+error: `[spati, E0001] wrong item kind: macro `spati` can only be used on inherent impls and structs
  --> tests/ui-fail/E0001-wrong-item-kind.rs:1:1
   |
 1 | #[spati::spati]

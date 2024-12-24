@@ -1,6 +1,4 @@
 #[spati::spati]
-union Cat {
-    age: u8,
-}
+struct Cat {}
 
 fn main() {}
