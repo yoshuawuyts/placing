@@ -12,7 +12,6 @@ pub(crate) fn process_impl(item: ItemImpl) -> TokenStream {
             compile_error!("`[spati, E0002] trait impls unsupported: macro `spati` can only be used on bare `impl {}` blocks");
         }.into();
     }
-    // let span = item.span();
 
     // We need all the impl components to later recreate it
     // and fill it with our own methods
@@ -53,9 +52,8 @@ pub(crate) fn process_impl(item: ItemImpl) -> TokenStream {
         }
         .into(),
     };
-
     let self_ident = &self_ty.path.segments.last_mut().unwrap().ident;
-    *self_ty.path.segments.last_mut().unwrap() = create_segment(self_ident, &gen_ty);
+    *self_ty.path.segments.last_mut().unwrap() = update_target_ident(self_ident, &gen_ty);
 
     // All done now, send back our updated `impl` block
     quote! {
@@ -66,7 +64,8 @@ pub(crate) fn process_impl(item: ItemImpl) -> TokenStream {
     .into()
 }
 
-fn create_segment(
+/// Update the target type of the impl block with the right generics
+fn update_target_ident(
     self_ident: &syn::Ident,
     ty_generics: &syn::TypeGenerics<'_>,
 ) -> syn::PathSegment {
