@@ -1,0 +1,11 @@
+error: cannot find attribute `super` in this scope
+ --> tests/ui-fail/E0004-invalid-attr.rs:4:7
+  |
+4 |     #[super(invalid)]
+  |       ^^^^^
+
+error: cannot find attribute `super` in this scope
+ --> tests/ui-fail/E0004-invalid-attr.rs:7:7
+  |
+7 |     #[super = "invalid"]
+  |       ^^^^^
