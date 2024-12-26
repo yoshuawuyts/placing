@@ -1,0 +1,31 @@
+error: macros that expand to items must be delimited with braces or followed by a semicolon
+ --> tests/ui-fail/E0005-empty-constructor-body.rs:7:22
+  |
+7 |     fn new() -> Self {}
+  |                      ^^
+  |
+help: change the delimiters to curly braces
+  |
+7 |     fn new() -> Self {}
+  |                      ~
+help: add a semicolon
+  |
+7 |     fn new() -> Self {};
+  |                        +
+
+error: macro expansion ignores token `,` and any following
+ --> tests/ui-fail/E0005-empty-constructor-body.rs:7:22
+  |
+4 | #[spati::spati]
+  | --------------- caused by the macro expansion here
+...
+7 |     fn new() -> Self {}
+  |                      ^^
+  |
+  = note: the usage of `spati::spati!` is likely invalid in item context
+
+error: [E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty
+ --> tests/ui-fail/E0005-empty-constructor-body.rs:7:22
+  |
+7 |     fn new() -> Self {}
+  |                      ^^

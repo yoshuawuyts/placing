@@ -1,16 +1,22 @@
 #[spati::spati]
-struct Cat;
+struct Cat {
+    age: u8,
+}
 
 #[spati::spati]
 impl Cat {
     #[super]
-    fn list(&self) -> Self {
-        todo!()
+    fn new(age: u8) -> Self {
+        Self { age }
     }
 
-    fn path(&self) -> Self {
-        todo!()
+    fn age(&self) -> &u8 {
+        &self.age
     }
 }
 
-fn main() {}
+fn main() {
+    // let mut cat = unsafe { Cat::spati_uninit_new() };
+    // cat.spati_init_new(12);
+    // let cat = cat;
+}

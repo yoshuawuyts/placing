@@ -1,0 +1,31 @@
+error: macros that expand to items must be delimited with braces or followed by a semicolon
+ --> tests/ui-fail/E0006-invalid-constructor-body-non-expr.rs:8:9
+  |
+8 |         todo!()
+  |         ^^^^
+  |
+help: change the delimiters to curly braces
+  |
+8 |         {}!()
+  |         ~
+help: add a semicolon
+  |
+8 |         todo;!()
+  |             +
+
+error: macro expansion ignores token `,` and any following
+ --> tests/ui-fail/E0006-invalid-constructor-body-non-expr.rs:8:9
+  |
+4 | #[spati::spati]
+  | --------------- caused by the macro expansion here
+...
+8 |         todo!()
+  |         ^^^^
+  |
+  = note: the usage of `spati::spati!` is likely invalid in item context
+
+error: [E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression
+ --> tests/ui-fail/E0006-invalid-constructor-body-non-expr.rs:8:9
+  |
+8 |         todo!()
+  |         ^^^^

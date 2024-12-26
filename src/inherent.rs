@@ -1,11 +1,9 @@
-use std::{any::type_name, process::Output};
-
 use proc_macro::TokenStream;
 
 use quote::quote;
 use syn::{
-    spanned::Spanned, Attribute, FnArg, ImplItem, ImplItemFn, ItemImpl, PatType, Path, PathSegment,
-    Receiver, ReturnType,
+    spanned::Spanned, Attribute, Block, FnArg, ImplItem, ImplItemFn, ItemImpl, Path, PathSegment,
+    Receiver, ReturnType, Signature, Stmt,
 };
 
 use crate::utils::create_outer_generics;
@@ -88,27 +86,43 @@ fn rewrite_fns(
 ) -> Result<Vec<ImplItem>, TokenStream> {
     let mut output = vec![];
     for f in fn_items {
-        let fn_kind = FunctionKind::from_fn(&f, self_ident);
-
         let ImplItemFn {
             mut attrs,
             vis,
             defaultness,
             sig,
-            block,
+            mut block,
         } = f;
 
-        // Check whether `super` is present and then remove it from the list
-        // errors if the attribute is present but malformed
-        let has_super = has_super(&attrs)?;
+        // Process and identify the function
+        let fn_kind = dbg!(FunctionKind::from_fn(&sig, self_ident));
+        let has_super = dbg!(has_super(&attrs)?);
         strip_super(&mut attrs);
 
-        let statements = block.stmts;
+        // Validate the function bodies and rewrite them where needed.
+        match (fn_kind, has_super) {
+            (FunctionKind::Static, false) | (FunctionKind::Method, false) => {}
+            (FunctionKind::Static, true) => {
+                return Err(quote::quote_spanned! { sig.span() =>
+                    compile_error!("[E0007, spati] invalid super target: the #[super] attribute cannot be applied to static functions"),
+                }.into());
+            }
+            (FunctionKind::Method, true) => {
+                return Err(quote::quote_spanned! { sig.span() =>
+                    compile_error!("[E0007, spati] invalid super target: the #[super] attribute cannot be applied to static functions"),
+                }.into());
+            }
+            (FunctionKind::Constructor, false) => todo!(),
+
+            (FunctionKind::Constructor, true) => rewrite_super_constructor(&mut block, self_ident)?,
+            (FunctionKind::Builder, true) => todo!(),
+            (FunctionKind::Builder, false) => todo!(),
+        }
+
         let f = syn::parse2(quote! {
             #(#attrs)*
-            #vis #defaultness #sig {
-                #(#statements)*
-            }
+            #vis #defaultness #sig
+            #block
         })
         .unwrap();
         output.push(ImplItem::Fn(f));
@@ -117,6 +131,7 @@ fn rewrite_fns(
 }
 
 /// What kind of function are we operating on?
+#[derive(Debug)]
 enum FunctionKind {
     /// A static method with no self-ty
     Static,
@@ -124,33 +139,32 @@ enum FunctionKind {
     Constructor,
     /// A method with a self-ty
     Method,
+    /// A method with a self-ty that returns type `Self`
+    Builder,
 }
 
 impl FunctionKind {
-    fn from_fn(f: &ImplItemFn, self_ident: &syn::Ident) -> Self {
-        // Check whether `-> Self` or equivalent
-        if let ReturnType::Type(_, ty) = &f.sig.output {
+    fn from_fn(sig: &Signature, self_ident: &syn::Ident) -> Self {
+        // If the function `-> Self` or equivalent we're working with a
+        // constructor
+        if let ReturnType::Type(_, ty) = dbg!(&sig.output) {
             if let syn::Type::Path(type_path) = &**ty {
-                let self_ident = self_ident.to_string();
                 let ty_path = path_to_string(&type_path.path);
+                let self_ident = self_ident.to_string();
                 if ty_path == "Self" || ty_path == self_ident {
-                    return Self::Constructor;
+                    match sig.inputs.first() {
+                        Some(FnArg::Receiver(Receiver { .. })) => return Self::Builder,
+                        _ => return Self::Constructor,
+                    };
                 }
             }
         }
 
-        // check the input arguments for whether it has `self` or `self: Pattern {}`
-        match f.sig.inputs.first() {
-            Some(FnArg::Receiver(Receiver { ty, .. })) | Some(FnArg::Typed(PatType { ty, .. })) => {
-                match &**ty {
-                    syn::Type::Path(type_path) => match path_to_string(&type_path.path).as_str() {
-                        "self" => Self::Method,
-                        _ => panic!("good job, you're a human fuzzer"),
-                    },
-                    _ => panic!("good job, you're a human fuzzer"),
-                }
-            }
-            None => Self::Static,
+        // If our function takes `self` or `self: Pattern {}`, we're working with a
+        // method. Otherwise it's a static function.
+        match sig.inputs.first() {
+            Some(FnArg::Receiver(Receiver { .. })) => Self::Method,
+            _ => Self::Static,
         }
     }
 }
@@ -163,7 +177,7 @@ fn has_super(attrs: &[Attribute]) -> Result<bool, TokenStream> {
 
         return match &attr.meta {
             syn::Meta::Path(_) => Ok(true),
-        _ => Err(quote::quote_spanned! { attr.span() =>
+            _ => Err(quote::quote_spanned! { attr.span() =>
                 compile_error!("[E0004, spati] invalid attr: the #[super] attribute does not support any additional arguments"),
             }.into()),
         };
@@ -180,4 +194,43 @@ fn path_to_string(path: &Path) -> String {
 
 fn strip_super(attrs: &mut Vec<Attribute>) {
     attrs.retain(|attr| path_to_string(attr.path()) != "super")
+}
+
+/// Validate that the `super` attribute is correctly applied
+fn rewrite_super_constructor(block: &mut Block, ident: &syn::Ident) -> Result<(), TokenStream> {
+    match block.stmts.last_mut() {
+        Some(syn::Stmt::Expr(expr, _)) => {
+            match expr {
+                syn::Expr::Struct(strukt) => {
+                    // TODO: validate #strukt has the right name
+                    // TODO: rewrite strukt's name
+                    *strukt = syn::parse2(quote! {
+                        #ident {
+                            inner: #strukt
+                        }
+                    }).unwrap();
+                    Ok(())
+                }
+                expr => Err(quote::quote_spanned! { expr.span() =>
+                    compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
+                }.into()),
+            }
+        }
+        Some(stmt) => Err(quote::quote_spanned! { stmt.span() =>
+            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
+        }.into()),
+        None => Err(quote::quote_spanned! { block.span() =>
+            compile_error!("[E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty"),
+        }.into()),
+    }
+}
+
+/// Rewrite a non-`#[super]` statement to create the inner type instead
+fn rewrite_non_super_constructor(statement: &Stmt, target: &syn::Ident) -> Stmt {
+    syn::parse2(quote! {
+        #target {
+            inner: #statement
+        }
+    })
+    .unwrap()
 }
