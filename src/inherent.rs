@@ -43,24 +43,11 @@ pub(crate) fn process_impl(item: ItemImpl) -> TokenStream {
     // - one where EMPLACE is generic
     // - one where EMPLACE is true
     // - one where EMPLACE is false
-    let mut self_ty_true = self_ty.clone();
-    let generic_params = generics.params.iter();
-    update_path_generics(
-        &mut self_ty_true,
-        syn::parse2(quote! {<#(#generic_params),* true>}).unwrap(),
-    );
-    let mut self_ty_false = self_ty.clone();
-    let generic_params = generics.params.iter();
-    update_path_generics(
-        &mut self_ty_false,
-        syn::parse2(quote! {<#(#generic_params),* false>}).unwrap(),
-    );
-    let mut self_ty_generic = self_ty;
-    let generic_params = generics.params.iter();
-    update_path_generics(
-        &mut self_ty_generic,
-        syn::parse2(quote! {<#(#generic_params),* EMPLACE>}).unwrap(),
-    );
+    let self_ty_true = set_path_generics(&self_ty, &generics, syn::parse2(quote! {true}).unwrap());
+    let self_ty_false =
+        set_path_generics(&self_ty, &generics, syn::parse2(quote! {false}).unwrap());
+    let self_ty_generic =
+        set_path_generics(&self_ty, &generics, syn::parse2(quote! {EMPLACE}).unwrap());
 
     // Create our final sets of generic params
     let (gen_impl, _, gen_where) = generics.split_for_impl();
@@ -106,16 +93,6 @@ pub(crate) fn process_impl(item: ItemImpl) -> TokenStream {
         }
     }
     .into()
-}
-
-/// Update the generics on some path
-fn update_path_generics(
-    ty_path: &mut syn::TypePath,
-    ty_generics: syn::AngleBracketedGenericArguments,
-) {
-    let segment = ty_path.path.segments.last_mut().unwrap();
-    let ident = &segment.ident;
-    *segment = syn::parse2(quote! { #ident #ty_generics }).unwrap();
 }
 
 /// The output of `rewrite_fns`
@@ -301,4 +278,32 @@ fn rewrite_non_super_constructor(block: &mut Block, ident: &syn::Ident) -> Resul
             compile_error!("[E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty"),
         }.into()),
     }
+}
+
+fn set_path_generics(
+    path: &syn::TypePath,
+    base: &syn::Generics,
+    param: syn::GenericArgument,
+) -> syn::TypePath {
+    let mut path = path.clone();
+    let segment = path.path.segments.last_mut().unwrap();
+    let ident = &segment.ident;
+    let params = base.params.iter().map(|param| -> syn::GenericArgument {
+        match param {
+            syn::GenericParam::Lifetime(lifetime_param) => {
+                let param = &lifetime_param.lifetime;
+                syn::parse2(quote! {#param}).unwrap()
+            }
+            syn::GenericParam::Type(type_param) => {
+                let param = &type_param.ident;
+                syn::parse2(quote! {#param}).unwrap()
+            }
+            syn::GenericParam::Const(const_param) => {
+                let param = &const_param.ident;
+                syn::parse2(quote! {#param}).unwrap()
+            }
+        }
+    });
+    *segment = syn::parse2(quote! { #ident <#(#params,)* #param> }).unwrap();
+    path
 }
