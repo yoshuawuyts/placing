@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 
 use quote::{format_ident, quote};
 use syn::{
-    spanned::Spanned, Attribute, Block, FnArg, ImplItem, ImplItemFn, ItemImpl, Path,
+    spanned::Spanned, Attribute,  FnArg, ImplItem, ImplItemFn, ItemImpl, Path,
     Receiver, ReturnType, Signature,
 };
 
@@ -50,6 +50,7 @@ pub(crate) fn process_impl(item: ItemImpl) -> TokenStream {
         set_path_generics(&self_ty, &generics, syn::parse2(quote! {EMPLACE}).unwrap());
 
     // Create our final sets of generic params
+    // TODO: fix this nonsense
     let (gen_impl, _, gen_where) = generics.split_for_impl();
     let (gen_impl_true, self_ty_true, gen_where_true) =
         (gen_impl.clone(), self_ty_true, gen_where.clone());
@@ -132,10 +133,10 @@ fn rewrite_fns(fn_items: Vec<ImplItemFn>, self_ident: &syn::Ident) -> Result<Imp
                 }.into());
             }
             (FunctionKind::Constructor, false) => {
-                rewrite_non_super_constructor(&mut f.block, self_ident)?;
-                output.non_emplacing_constructors.push(f.into());
+                rewrite_non_super_constructor(&mut output, f, self_ident)?;
             }
             (FunctionKind::Constructor, true) => {
+                rewrite_non_super_constructor(&mut output, f.clone(), self_ident)?;
                 rewrite_super_constructor(&mut output, f)?;
             }
             (FunctionKind::Builder, true) => todo!("builders and transforms not yet supported"),
@@ -288,9 +289,9 @@ fn rewrite_super_constructor(
 }
 
 /// Rewrite a non-`#[super]` statement to create the inner type instead
-fn rewrite_non_super_constructor(block: &mut Block, ident: &syn::Ident) -> Result<(), TokenStream> {
+fn rewrite_non_super_constructor(output: &mut ImplFns, mut f: ImplItemFn, ident: &syn::Ident) -> Result<(), TokenStream> {
     let inner_ident = format_ident!("Inner{}", ident);
-    match block.stmts.last_mut() {
+    match f.block.stmts.last_mut() {
         Some(syn::Stmt::Expr(expr, _)) => {
             match expr {
                 syn::Expr::Struct(strukt) => {
@@ -302,20 +303,21 @@ fn rewrite_non_super_constructor(block: &mut Block, ident: &syn::Ident) -> Resul
                             inner: ::core::mem::MaybeUninit::new(#inner_ident { #fields })
                         }
                     }).unwrap();
-                    Ok(())
                 }
-                expr => Err(quote::quote_spanned! { expr.span() =>
+                expr => return Err(quote::quote_spanned! { expr.span() =>
                     compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
                 }.into()),
             }
         }
-        Some(stmt) => Err(quote::quote_spanned! { stmt.span() =>
+        Some(stmt) => return Err(quote::quote_spanned! { stmt.span() =>
             compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
         }.into()),
-        None => Err(quote::quote_spanned! { block.span() =>
+        None => return Err(quote::quote_spanned! { f.block.span() =>
             compile_error!("[E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty"),
         }.into()),
-    }
+    };
+    output.non_emplacing_constructors.push(f.into());
+    Ok(())
 }
 
 fn set_path_generics(
