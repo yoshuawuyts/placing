@@ -2,8 +2,8 @@ use proc_macro::TokenStream;
 
 use quote::{format_ident, quote};
 use syn::{
-    spanned::Spanned, Attribute, Block, FnArg, ImplItem, ImplItemFn, ItemImpl, Path, Receiver,
-    ReturnType, Signature,
+    spanned::Spanned, token::Impl, Attribute, Block, FnArg, ImplItem, ImplItemFn, ItemImpl, Path,
+    Receiver, ReturnType, Signature,
 };
 
 use crate::utils::create_outer_generics;
@@ -108,18 +108,10 @@ struct ImplFns {
 fn rewrite_fns(fn_items: Vec<ImplItemFn>, self_ident: &syn::Ident) -> Result<ImplFns, TokenStream> {
     let mut output = ImplFns::default();
     for mut f in fn_items {
-        let ImplItemFn {
-            ref mut attrs,
-            vis: _,
-            defaultness: _,
-            sig,
-            ref mut block,
-        } = &mut f;
-
         // Process and identify the function
-        let fn_kind = FunctionKind::from_fn(&sig, self_ident);
-        let has_super = has_super(&attrs)?;
-        strip_super(attrs);
+        let fn_kind = FunctionKind::from_fn(&f.sig, self_ident);
+        let has_super = has_super(&f.attrs)?;
+        strip_super(&mut f.attrs);
 
         // Validate the function bodies and rewrite them where needed.
         match (&fn_kind, has_super) {
@@ -130,22 +122,21 @@ fn rewrite_fns(fn_items: Vec<ImplItemFn>, self_ident: &syn::Ident) -> Result<Imp
                 output.methods.push(f.into());
             }
             (FunctionKind::Static, true) => {
-                return Err(quote::quote_spanned! { sig.span() =>
+                return Err(quote::quote_spanned! { f.sig.span() =>
                     compile_error!("[E0007, spati] invalid super target: the #[super] attribute cannot be applied to static functions"),
                 }.into());
             }
             (FunctionKind::Method, true) => {
-                return Err(quote::quote_spanned! { sig.span() =>
+                return Err(quote::quote_spanned! { f.sig.span() =>
                     compile_error!("[E0007, spati] invalid super target: the #[super] attribute cannot be applied to static functions"),
                 }.into());
             }
             (FunctionKind::Constructor, false) => {
-                rewrite_non_super_constructor(block, self_ident)?;
+                rewrite_non_super_constructor(&mut f.block, self_ident)?;
                 output.non_emplacing_constructors.push(f.into());
             }
             (FunctionKind::Constructor, true) => {
-                rewrite_super_constructor(block, self_ident)?;
-                output.emplacing_constructors.push(f.into());
+                rewrite_super_constructor(&mut output, f, self_ident)?;
             }
             (FunctionKind::Builder, true) => todo!("builders and transforms not yet supported"),
             (FunctionKind::Builder, false) => todo!("builders and transforms not yet supported"),
@@ -221,32 +212,90 @@ fn strip_super(attrs: &mut Vec<Attribute>) {
 }
 
 /// Rewrite a `#[super]` statement to create the inner type instead
-fn rewrite_super_constructor(block: &mut Block, ident: &syn::Ident) -> Result<(), TokenStream> {
-    let inner_ident = format_ident!("Inner{}", ident);
-    match block.stmts.last_mut() {
+fn rewrite_super_constructor(
+    output: &mut ImplFns,
+    mut f: ImplItemFn,
+    ident: &syn::Ident,
+) -> Result<(), TokenStream> {
+    let inner_ty_ident = format_ident!("Inner{}", ident);
+    let fn_ident = f.sig.ident.clone();
+
+    // Create the new uninit constructor
+    let syn::ImplItemFn {
+        attrs,
+        vis,
+        defaultness,
+        sig,
+        block,
+    } = &f;
+    let Signature {
+        constness: _,
+        asyncness: _,
+        unsafety: _,
+        abi: _,
+        fn_token,
+        ident: _,
+        generics: _,
+        paren_token: _,
+        inputs: _,
+        variadic: _,
+        output: _,
+    } = sig;
+    let uninit_ident = format_ident!("spati_uninit_{}", fn_ident);
+    let uninit: syn::ImplItemFn = syn::parse2(quote! {
+        #(#attrs)*
+        #vis #fn_token #uninit_ident() -> Self
+        {
+            Self{ inner: ::core::mem::MaybeUninit::uninit() }
+        }
+    })
+    .unwrap();
+    output.emplacing_constructors.push(uninit.into());
+
+    // Rewrite the existing constructors body to emplace
+    match f.block.stmts.last_mut() {
         Some(syn::Stmt::Expr(expr, _)) => {
             match expr {
                 syn::Expr::Struct(strukt) => {
-                    let fields = strukt.fields.clone();
+
+                    let assignments = strukt.fields.iter().map(|field| {
+                        let key = &field.member; 
+                        let expr = &field.expr;
+                        syn::parse2(quote! { {{
+                            let _this = self.inner.as_mut_ptr();
+                            unsafe { (&raw mut (*_this).#key).write(#expr) };
+                        }} }).unwrap()
+                    }).collect::<Vec<syn::ExprBlock>>();
                     *strukt = syn::parse2(quote! {
-                        #ident {
-                            inner: ::core::mem::MaybeUninit::new(#inner_ident { #fields })
-                        }
+                        let _this = self.inner.as_mut_ptr();
+
+                        #(#assignments)*;
                     }).unwrap();
-                    Ok(())
                 }
-                expr => Err(quote::quote_spanned! { expr.span() =>
+                expr => return Err(quote::quote_spanned! { expr.span() =>
                     compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
                 }.into()),
             }
         }
-        Some(stmt) => Err(quote::quote_spanned! { stmt.span() =>
+        Some(stmt) => return Err(quote::quote_spanned! { stmt.span() =>
             compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
         }.into()),
-        None => Err(quote::quote_spanned! { block.span() =>
+        None => return Err(quote::quote_spanned! { f.block.span() =>
             compile_error!("[E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty"),
         }.into()),
-    }
+
+    };
+    // TODO: Rewrite the existing constructors signature to emplace
+    f.sig.ident = format_ident!("spati_init_{}", fn_ident);
+    f.sig.output = ReturnType::Default;
+    let inputs = f.sig.inputs.clone();
+    f.sig.inputs.clear();
+    f.sig
+        .inputs
+        .push(FnArg::Receiver(syn::parse2(quote! { &mut self }).unwrap()));
+    f.sig.inputs.extend(inputs);
+    output.emplacing_constructors.push(f.into());
+    Ok(())
 }
 
 /// Rewrite a non-`#[super]` statement to create the inner type instead
