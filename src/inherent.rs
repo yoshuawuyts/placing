@@ -1,9 +1,9 @@
 use proc_macro::TokenStream;
 
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{
-    spanned::Spanned, Attribute, Block, FnArg, ImplItem, ImplItemFn, ItemImpl, Path, PathSegment,
-    Receiver, ReturnType, Signature, Stmt,
+    spanned::Spanned, Attribute, Block, FnArg, ImplItem, ImplItemFn, ItemImpl, Path, Receiver,
+    ReturnType, Signature,
 };
 
 use crate::utils::create_outer_generics;
@@ -30,78 +30,128 @@ pub(crate) fn process_impl(item: ItemImpl) -> TokenStream {
         items,
     } = item;
 
-    // Add the `const EMPLACE` generic to the list of generics
-    let outer_generics = create_outer_generics(&generics);
-    let (gen_impl, gen_ty, gen_where) = outer_generics.split_for_impl();
-
-    // Add `const EMPLAVCE` to the list of generics on impl target type
-    let mut self_ty = match *self_ty {
+    // Validate we're processing an impl we know how to handle
+    let self_ty = match *self_ty {
         syn::Type::Path(type_path) => type_path,
         _ => return quote::quote_spanned! { impl_token.span() =>
             compile_error!("[E0003, spati] invalid impl target: `spati` doesn't work for impls on tuples, slices, or other non-path types"),
         }.into(),
     };
     let self_ident = &self_ty.path.segments.last().unwrap().ident.clone();
-    *self_ty.path.segments.last_mut().unwrap() = update_target_ident(self_ident, &gen_ty);
+
+    // We need to generate three different impl blocks:
+    // - one where EMPLACE is generic
+    // - one where EMPLACE is true
+    // - one where EMPLACE is false
+    let mut self_ty_true = self_ty.clone();
+    let generic_params = generics.params.iter();
+    update_path_generics(
+        &mut self_ty_true,
+        syn::parse2(quote! {<#(#generic_params),* true>}).unwrap(),
+    );
+    let mut self_ty_false = self_ty.clone();
+    let generic_params = generics.params.iter();
+    update_path_generics(
+        &mut self_ty_false,
+        syn::parse2(quote! {<#(#generic_params),* false>}).unwrap(),
+    );
+    let mut self_ty_generic = self_ty;
+    let generic_params = generics.params.iter();
+    update_path_generics(
+        &mut self_ty_generic,
+        syn::parse2(quote! {<#(#generic_params),* EMPLACE>}).unwrap(),
+    );
+
+    // Create our final sets of generic params
+    let (gen_impl, _, gen_where) = generics.split_for_impl();
+    let (gen_impl_true, self_ty_true, gen_where_true) =
+        (gen_impl.clone(), self_ty_true, gen_where.clone());
+    let (gen_impl_false, self_ty_false, gen_where_false) =
+        (gen_impl.clone(), self_ty_false, gen_where.clone());
+    let outer_generics = create_outer_generics(&generics);
+    let (gen_impl, _, gen_where) = outer_generics.split_for_impl();
 
     // We only want to modify the methods, the rest of the items we're happy to
     // pass along as-is.
     let mut fn_items = vec![];
-    let mut all_items = vec![];
+    let mut non_fn_items = vec![];
     for item in items {
         match item {
             ImplItem::Fn(f) => fn_items.push(f),
-            item => all_items.push(item),
+            item => non_fn_items.push(item),
         }
     }
-    let fn_items = match rewrite_fns(fn_items, &self_ident) {
+    let ImplFns {
+        statics,
+        methods,
+        emplacing_constructors,
+        non_emplacing_constructors,
+    } = match rewrite_fns(fn_items, &self_ident) {
         Ok(fn_items) => fn_items,
         Err(token_stream) => return token_stream,
     };
-    all_items.extend(fn_items);
 
     // All done now, send back our updated `impl` block
     quote! {
-        #defaultness #unsafety #impl_token #gen_impl #self_ty #gen_where {
-            #(#all_items)*
+        #defaultness #unsafety #impl_token #gen_impl_false #self_ty_false #gen_where_false {
+            #(#non_emplacing_constructors)*
+            #(#non_fn_items)*
+            #(#statics)*
+        }
+        #defaultness #unsafety #impl_token #gen_impl_true #self_ty_true #gen_where_true {
+            #(#emplacing_constructors)*
+        }
+        #defaultness #unsafety #impl_token #gen_impl #self_ty_generic #gen_where {
+            #(#methods)*
         }
     }
     .into()
 }
 
-/// Update the target type of the impl block with the right generics
-fn update_target_ident(
-    self_ident: &syn::Ident,
-    ty_generics: &syn::TypeGenerics<'_>,
-) -> syn::PathSegment {
-    let item = quote! { #self_ident #ty_generics };
-    let item: PathSegment = syn::parse2(item).unwrap();
-    item
+/// Update the generics on some path
+fn update_path_generics(
+    ty_path: &mut syn::TypePath,
+    ty_generics: syn::AngleBracketedGenericArguments,
+) {
+    let segment = ty_path.path.segments.last_mut().unwrap();
+    let ident = &segment.ident;
+    *segment = syn::parse2(quote! { #ident #ty_generics }).unwrap();
 }
 
-/// Process the
-fn rewrite_fns(
-    fn_items: Vec<ImplItemFn>,
-    self_ident: &syn::Ident,
-) -> Result<Vec<ImplItem>, TokenStream> {
-    let mut output = vec![];
-    for f in fn_items {
+/// The output of `rewrite_fns`
+#[derive(Default)]
+struct ImplFns {
+    statics: Vec<ImplItem>,
+    methods: Vec<ImplItem>,
+    emplacing_constructors: Vec<ImplItem>,
+    non_emplacing_constructors: Vec<ImplItem>,
+}
+
+/// Process thef functions one by one
+fn rewrite_fns(fn_items: Vec<ImplItemFn>, self_ident: &syn::Ident) -> Result<ImplFns, TokenStream> {
+    let mut output = ImplFns::default();
+    for mut f in fn_items {
         let ImplItemFn {
-            mut attrs,
-            vis,
-            defaultness,
+            ref mut attrs,
+            vis: _,
+            defaultness: _,
             sig,
-            mut block,
-        } = f;
+            ref mut block,
+        } = &mut f;
 
         // Process and identify the function
-        let fn_kind = dbg!(FunctionKind::from_fn(&sig, self_ident));
-        let has_super = dbg!(has_super(&attrs)?);
-        strip_super(&mut attrs);
+        let fn_kind = FunctionKind::from_fn(&sig, self_ident);
+        let has_super = has_super(&attrs)?;
+        strip_super(attrs);
 
         // Validate the function bodies and rewrite them where needed.
-        match (fn_kind, has_super) {
-            (FunctionKind::Static, false) | (FunctionKind::Method, false) => {}
+        match (&fn_kind, has_super) {
+            (FunctionKind::Static, false) => {
+                output.statics.push(f.into());
+            }
+            (FunctionKind::Method, false) => {
+                output.methods.push(f.into());
+            }
             (FunctionKind::Static, true) => {
                 return Err(quote::quote_spanned! { sig.span() =>
                     compile_error!("[E0007, spati] invalid super target: the #[super] attribute cannot be applied to static functions"),
@@ -112,20 +162,17 @@ fn rewrite_fns(
                     compile_error!("[E0007, spati] invalid super target: the #[super] attribute cannot be applied to static functions"),
                 }.into());
             }
-            (FunctionKind::Constructor, false) => todo!(),
-
-            (FunctionKind::Constructor, true) => rewrite_super_constructor(&mut block, self_ident)?,
-            (FunctionKind::Builder, true) => todo!(),
-            (FunctionKind::Builder, false) => todo!(),
+            (FunctionKind::Constructor, false) => {
+                rewrite_non_super_constructor(block, self_ident)?;
+                output.non_emplacing_constructors.push(f.into());
+            }
+            (FunctionKind::Constructor, true) => {
+                rewrite_super_constructor(block, self_ident)?;
+                output.emplacing_constructors.push(f.into());
+            }
+            (FunctionKind::Builder, true) => todo!("builders and transforms not yet supported"),
+            (FunctionKind::Builder, false) => todo!("builders and transforms not yet supported"),
         }
-
-        let f = syn::parse2(quote! {
-            #(#attrs)*
-            #vis #defaultness #sig
-            #block
-        })
-        .unwrap();
-        output.push(ImplItem::Fn(f));
     }
     Ok(output)
 }
@@ -147,7 +194,7 @@ impl FunctionKind {
     fn from_fn(sig: &Signature, self_ident: &syn::Ident) -> Self {
         // If the function `-> Self` or equivalent we're working with a
         // constructor
-        if let ReturnType::Type(_, ty) = dbg!(&sig.output) {
+        if let ReturnType::Type(_, ty) = &sig.output {
             if let syn::Type::Path(type_path) = &**ty {
                 let ty_path = path_to_string(&type_path.path);
                 let self_ident = self_ident.to_string();
@@ -196,17 +243,17 @@ fn strip_super(attrs: &mut Vec<Attribute>) {
     attrs.retain(|attr| path_to_string(attr.path()) != "super")
 }
 
-/// Validate that the `super` attribute is correctly applied
+/// Rewrite a `#[super]` statement to create the inner type instead
 fn rewrite_super_constructor(block: &mut Block, ident: &syn::Ident) -> Result<(), TokenStream> {
+    let inner_ident = format_ident!("Inner{}", ident);
     match block.stmts.last_mut() {
         Some(syn::Stmt::Expr(expr, _)) => {
             match expr {
                 syn::Expr::Struct(strukt) => {
-                    // TODO: validate #strukt has the right name
-                    // TODO: rewrite strukt's name
+                    let fields = strukt.fields.clone();
                     *strukt = syn::parse2(quote! {
                         #ident {
-                            inner: #strukt
+                            inner: ::core::mem::MaybeUninit::new(#inner_ident { #fields })
                         }
                     }).unwrap();
                     Ok(())
@@ -226,11 +273,32 @@ fn rewrite_super_constructor(block: &mut Block, ident: &syn::Ident) -> Result<()
 }
 
 /// Rewrite a non-`#[super]` statement to create the inner type instead
-fn rewrite_non_super_constructor(statement: &Stmt, target: &syn::Ident) -> Stmt {
-    syn::parse2(quote! {
-        #target {
-            inner: #statement
+fn rewrite_non_super_constructor(block: &mut Block, ident: &syn::Ident) -> Result<(), TokenStream> {
+    let inner_ident = format_ident!("Inner{}", ident);
+    match block.stmts.last_mut() {
+        Some(syn::Stmt::Expr(expr, _)) => {
+            match expr {
+                syn::Expr::Struct(strukt) => {
+                    let fields = strukt.fields.clone();
+                    // TODO: validate #strukt has the right name
+                    // TODO: rewrite strukt's name
+                    *strukt = syn::parse2(quote! {
+                        #ident {
+                            inner: ::core::mem::MaybeUninit::new(#inner_ident { #fields })
+                        }
+                    }).unwrap();
+                    Ok(())
+                }
+                expr => Err(quote::quote_spanned! { expr.span() =>
+                    compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
+                }.into()),
+            }
         }
-    })
-    .unwrap()
+        Some(stmt) => Err(quote::quote_spanned! { stmt.span() =>
+            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
+        }.into()),
+        None => Err(quote::quote_spanned! { block.span() =>
+            compile_error!("[E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty"),
+        }.into()),
+    }
 }

@@ -1,5 +1,5 @@
 use quote::quote;
-use syn::{ConstParam, GenericParam, Token};
+use syn::{GenericParam, Token};
 
 /// Add the const param to the trait definition
 pub(crate) fn create_outer_generics(generics: &syn::Generics) -> syn::Generics {
@@ -8,12 +8,7 @@ pub(crate) fn create_outer_generics(generics: &syn::Generics) -> syn::Generics {
     if !params.empty_or_trailing() {
         params.push_punct(<Token![,]>::default());
     }
-    params.push(create_const_param());
+    let param = syn::parse2(quote! { const EMPLACE: bool = false }).unwrap();
+    params.push(GenericParam::Const(param));
     outer_generics
-}
-
-fn create_const_param() -> GenericParam {
-    let item = quote! { const EMPLACE: bool = false };
-    let item: ConstParam = syn::parse2(item).unwrap();
-    GenericParam::Const(item)
 }

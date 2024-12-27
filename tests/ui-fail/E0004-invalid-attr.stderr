@@ -1,11 +1,30 @@
-error: cannot find attribute `super` in this scope
- --> tests/ui-fail/E0004-invalid-attr.rs:4:7
+error: macros that expand to items must be delimited with braces or followed by a semicolon
+ --> tests/ui-fail/E0004-invalid-attr.rs:6:5
   |
-4 |     #[super(invalid)]
-  |       ^^^^^
+6 |     #[super(invalid)]
+  |     ^
+  |
+help: change the delimiters to curly braces
+  |
+6 |     {}[super(invalid)]
+  |     ~
+help: add a semicolon
+  |
+6 |     #;[super(invalid)]
+  |      +
 
-error: cannot find attribute `super` in this scope
- --> tests/ui-fail/E0004-invalid-attr.rs:7:7
+error: macro expansion ignores token `,` and any following
+ --> tests/ui-fail/E0004-invalid-attr.rs:6:5
   |
-7 |     #[super = "invalid"]
-  |       ^^^^^
+4 | #[spati::spati]
+  | --------------- caused by the macro expansion here
+5 | impl Cat {
+6 |     #[super(invalid)]
+  |     ^
+  |
+  = note: the usage of `spati::spati!` is likely invalid in item context
+
+error: [E0004, spati] invalid attr: the #[super] attribute does not support any additional arguments
+ --> tests/ui-fail/E0004-invalid-attr.rs:6:5
+  |
+6 |     #[super(invalid)]

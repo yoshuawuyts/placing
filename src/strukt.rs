@@ -25,8 +25,6 @@ pub(crate) fn process_struct(item: ItemStruct) -> TokenStream {
     let inner_ident = format_ident!("Inner{}", ident);
     let (inner_impl, inner_ty, inner_where) = generics.split_for_impl();
 
-    // TODO: correctly quote all generic args
-
     quote! {
         #vis #struct_token #ident #outer_impl
         #outer_where
