@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     spanned::Spanned, Attribute,  FnArg, ImplItem, ImplItemFn, ItemImpl, Path,
     Receiver, ReturnType, Signature,
@@ -132,15 +132,15 @@ fn rewrite_fns(fn_items: Vec<ImplItemFn>, self_ident: &syn::Ident) -> Result<Imp
                     compile_error!("[E0007, spati] invalid super target: the #[super] attribute cannot be applied to static functions"),
                 }.into());
             }
-            (FunctionKind::Constructor, false) => {
+            (FunctionKind::Constructor(_heap_ty), false) => {
                 rewrite_non_super_constructor(&mut output, f, self_ident)?;
             }
-            (FunctionKind::Constructor, true) => {
+            (FunctionKind::Constructor(_heap_ty), true) => {
                 rewrite_non_super_constructor(&mut output, f.clone(), self_ident)?;
                 rewrite_super_constructor(&mut output, f)?;
             }
-            (FunctionKind::Builder, true) => todo!("builders and transforms not yet supported"),
-            (FunctionKind::Builder, false) => todo!("builders and transforms not yet supported"),
+            (FunctionKind::Builder(_heap_ty), true) => todo!("builders and transforms not yet supported"),
+            (FunctionKind::Builder(_heap_ty), false) => todo!("builders and transforms not yet supported"),
         }
     }
     Ok(output)
@@ -152,25 +152,40 @@ enum FunctionKind {
     /// A static method with no self-ty
     Static,
     /// A static constructor with a return type of `Self`
-    Constructor,
+    Constructor(HeapTy),
     /// A method with a self-ty
     Method,
     /// A method with a self-ty that returns type `Self`
-    Builder,
+    Builder(HeapTy),
+}
+
+/// Is our `Self`-ty on the heap?
+#[derive(Debug)]
+enum HeapTy {
+    /// `-> Self`
+    None,
+    /// `-> Box<Self>`
+    Box,
 }
 
 impl FunctionKind {
     fn from_fn(sig: &Signature, self_ident: &syn::Ident) -> Self {
-        // If the function `-> Self` or equivalent we're working with a
+        // If the function contains `-> Self` or equivalent we're working with a
         // constructor
         if let ReturnType::Type(_, ty) = &sig.output {
             if let syn::Type::Path(type_path) = &**ty {
-                let ty_path = path_to_string(&type_path.path);
-                let self_ident = self_ident.to_string();
-                if ty_path == "Self" || ty_path == self_ident {
+                let ty_path = path_ident(&type_path.path);
+                if ty_path == "Self" || ty_path == self_ident.to_string() {
                     match sig.inputs.first() {
-                        Some(FnArg::Receiver(Receiver { .. })) => return Self::Builder,
-                        _ => return Self::Constructor,
+                        Some(FnArg::Receiver(Receiver { .. })) => return Self::Builder(HeapTy::None),
+                        _ => return Self::Constructor(HeapTy::None),
+                    };
+                }
+
+                if ty_path == "Box < Self >" {
+                    match sig.inputs.first() {
+                        Some(FnArg::Receiver(Receiver { .. })) => return Self::Builder(HeapTy::Box),
+                        _ => return Self::Constructor(HeapTy::Box),
                     };
                 }
             }
@@ -187,7 +202,7 @@ impl FunctionKind {
 
 fn has_super(attrs: &[Attribute]) -> Result<bool, TokenStream> {
     for attr in attrs.iter() {
-        if path_to_string(attr.path()) != "super" {
+        if path_ident(attr.path()) != "super" {
             continue;
         }
 
@@ -201,15 +216,12 @@ fn has_super(attrs: &[Attribute]) -> Result<bool, TokenStream> {
     Ok(false)
 }
 
-fn path_to_string(path: &Path) -> String {
-    match path.get_ident() {
-        Some(ident) => ident.to_string(),
-        None => "".to_string(),
-    }
+fn path_ident(path: &Path) -> String {
+    path.to_token_stream().to_string()
 }
 
 fn strip_super(attrs: &mut Vec<Attribute>) {
-    attrs.retain(|attr| path_to_string(attr.path()) != "super")
+    attrs.retain(|attr| path_ident(attr.path()) != "super")
 }
 
 /// Rewrite a `#[super]` statement to create the inner type instead
@@ -296,8 +308,6 @@ fn rewrite_non_super_constructor(output: &mut ImplFns, mut f: ImplItemFn, ident:
             match expr {
                 syn::Expr::Struct(strukt) => {
                     let fields = strukt.fields.clone();
-                    // TODO: validate #strukt has the right name
-                    // TODO: rewrite strukt's name
                     *strukt = syn::parse2(quote! {
                         #ident {
                             inner: ::core::mem::MaybeUninit::new(#inner_ident { #fields })
