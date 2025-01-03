@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::ItemStruct;
 
-use crate::utils::create_outer_generics;
+use crate::utils::create_maybe_generics;
 
 /// Process an impl block that carries the `#[spati]` notation
 pub(crate) fn process_struct(item: ItemStruct) -> TokenStream {
@@ -19,7 +19,7 @@ pub(crate) fn process_struct(item: ItemStruct) -> TokenStream {
         semi_token,
     } = item;
 
-    let outer_generics = create_outer_generics(&generics);
+    let outer_generics = create_maybe_generics(&generics);
     let (outer_impl, outer_ty, outer_where) = outer_generics.split_for_impl();
 
     let inner_ident = format_ident!("Inner{}", ident);

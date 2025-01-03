@@ -47,8 +47,7 @@ $ cargo add spati
 ```
 
 ## Safety
-This crate uses ``#![deny(unsafe_code)]`` to ensure everything is implemented in
-100% Safe Rust.
+This crate prototypes a new language feature and liberally makes use of `unsafe`.
 
 ## Contributing
 Want to join us? Check out our ["Contributing" guide][contributing] and take a
@@ -60,6 +59,17 @@ look at some of these issues:
 [contributing]: https://github.com/yoshuawuyts/spati/blob/master.github/CONTRIBUTING.md
 [good-first-issue]: https://github.com/yoshuawuyts/spati/labels/good%20first%20issue
 [help-wanted]: https://github.com/yoshuawuyts/spati/labels/help%20wanted
+
+## See Also
+
+- [rust-for-linux/pinned-init](https://github.com/Rust-for-Linux/pinned-init)
+
+## References
+
+- [The safe pinned initialization problem - Rust for Linux](https://rust-for-linux.com/the-safe-pinned-initialization-problem)
+- [Rust Temporary Lifetimes and "Super Let" - Mara Bos](https://blog.m-ou.se/super-let/)
+- [In-place construction seems surprisingly simple? - Yosh Wuyts](https://blog.yoshuawuyts.com/in-place-construction-seems-surprisingly-simple/)
+- [Ergonomic self-referential types for Rust - Yosh Wuyts](https://blog.yoshuawuyts.com/self-referential-types/)
 
 ## License
 
