@@ -134,8 +134,9 @@ fn rewrite_fns(fn_items: Vec<ImplItemFn>, self_ident: &syn::Ident) -> Result<Imp
                 moving_constructor::rewrite_moving_constructor(&mut output, f, self_ident)?;
             }
             (fn_kind::FunctionKind::Constructor(_heap_ty), true) => {
-                moving_constructor::rewrite_moving_constructor(&mut output, f.clone(), self_ident)?;
-                placing_constructor::rewrite_super_constructor(&mut output, f)?;
+                placing_constructor::rewrite_super_constructor(&mut output, f.clone())?;
+                // TODO: re-enable me
+                // moving_constructor::rewrite_moving_constructor(&mut output, f, self_ident)?;
             }
             (fn_kind::FunctionKind::Builder(_heap_ty), true) => {
                 todo!("builders and transforms not yet supported")

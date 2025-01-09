@@ -2,6 +2,8 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{spanned::Spanned, FnArg, ImplItemFn, ReturnType};
 
+use crate::utils::expr_path_ident;
+
 use super::ImplFns;
 
 /// Rewrite a `#[super]` statement to create the inner type instead
@@ -34,25 +36,27 @@ pub(crate) fn rewrite_super_constructor(
     .unwrap();
     output.emplacing_constructors.push(uninit.into());
 
-    // Rewrite the existing constructors body to emplace
-    match f.block.stmts.last_mut() {
-        Some(syn::Stmt::Expr(expr, _)) => {
-            match expr {
-                syn::Expr::Struct(strukt) => *expr = rewrite_struct_expr(strukt),
-                expr => return Err(quote::quote_spanned! { expr.span() =>
-                    compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
-                }.into()),
-            }
-        }
-        // Some(syn::Stmt::Expr(syn::Expr::Call(expr_call), _)) => {}
+    // Get the last expr in the function body
+    let expr = match f.block.stmts.last_mut() {
+        Some(syn::Stmt::Expr(expr, _)) => expr,
         Some(stmt) => return Err(quote::quote_spanned! { stmt.span() =>
-            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
+            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a constructor"),
         }.into()),
         None => return Err(quote::quote_spanned! { f.block.span() =>
             compile_error!("[E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty"),
         }.into()),
-
     };
+
+    // Rewrite the last expr in the function body
+    match expr {
+        // e.g. `Self { .. }`
+        syn::Expr::Struct(strukt) => *expr = struct_new_uninit(strukt),
+        // e.g. `Box::new(Self { .. })`
+        syn::Expr::Call(call) => *expr = smart_pointer_new_uninit(call)?,
+        expr => return Err(quote::quote_spanned! { expr.span() =>
+            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
+        }.into()),
+    }
 
     // Rewrite the existing constructors signature to emplace
     f.sig.ident = format_ident!("spati_init_{}", fn_ident);
@@ -68,7 +72,8 @@ pub(crate) fn rewrite_super_constructor(
     Ok(())
 }
 
-fn rewrite_struct_expr(strukt: &mut syn::ExprStruct) -> syn::Expr {
+/// Convert `Self { .. }` to writes into a `MaybeUninit<Self>`
+fn struct_new_uninit(strukt: &mut syn::ExprStruct) -> syn::Expr {
     let assignments = strukt
         .fields
         .iter()
@@ -81,9 +86,47 @@ fn rewrite_struct_expr(strukt: &mut syn::ExprStruct) -> syn::Expr {
             .unwrap()
         })
         .collect::<Vec<syn::Block>>();
+
     syn::parse2(quote! {{
         let _this = self.inner.as_mut_ptr();
         #(#assignments)*
     }})
     .unwrap()
+}
+
+/// Convert `Box::new(Self { .. })` to writes into a `Box<MaybeUninit<Self>>`
+fn smart_pointer_new_uninit(call: &mut syn::ExprCall) -> Result<syn::Expr, TokenStream> {
+    let syn::Expr::Path(path) = &*call.func else {
+        return Err(quote::quote_spanned! { call.span() =>
+            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` can only end with a fixed set of expressions"),
+        }.into());
+    };
+
+    match expr_path_ident(path).as_str() {
+        "Box :: new" => {}
+        _ => {
+            return Err(quote::quote_spanned! { call.span() =>
+                compile_error!("[E0008, spati] invalid smart pointer constructor"),
+            }
+            .into())
+        }
+    }
+
+    let expr = match call.args.first() {
+        Some(syn::Expr::Struct(expr)) => expr,
+        _ => {
+            return Err(quote::quote_spanned! { call.span() =>
+                compile_error!("[E0008, spati] invalid smart pointer constructor`"),
+            }
+            .into())
+        }
+    };
+
+    // TODO: validate we're constructing a type `Self` inside of here
+
+    Ok(syn::parse2(quote! {
+        let this = self.0.as_mut_ptr();
+        unsafe { (&raw mut (*this).age).write(age) };
+    })
+    .unwrap())
 }

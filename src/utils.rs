@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{spanned::Spanned, Attribute, GenericParam, Path, Token};
+use syn::{spanned::Spanned, Attribute, ExprPath, GenericParam, Path, Token};
 
 /// Add the const param to the trait definition
 pub(crate) fn create_maybe_generics(generics: &syn::Generics) -> syn::Generics {
@@ -37,6 +37,11 @@ pub(crate) fn has_super(attrs: &[Attribute]) -> Result<bool, TokenStream> {
 
 /// Convert a path to its identity
 pub(crate) fn path_ident(path: &Path) -> String {
+    path.to_token_stream().to_string()
+}
+
+/// Convert a path to its identity
+pub(crate) fn expr_path_ident(path: &ExprPath) -> String {
     path.to_token_stream().to_string()
 }
 

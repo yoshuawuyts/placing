@@ -1,23 +1,22 @@
-// use core::mem::MaybeUninit;
+#[spati::spati]
+struct Cat {
+    age: u8,
+}
 
-// struct Cat(MaybeUninit<InnerCat>);
-// struct InnerCat {
-//     age: u8,
-// }
+#[spati::spati]
+impl Cat {
+    #[super]
+    fn new(age: u8) -> Box<Self> {
+        Box::new(Self { age })
+    }
 
-// impl Cat {
-//     unsafe fn new_uninit() -> Box<MaybeUninit<Cat>> {
-//         Box::new(MaybeUninit::uninit())
-//     }
-//     fn new_init2(&mut self, age: u8) {
-//         let this = self.0.as_mut_ptr();
-//         unsafe { (&raw mut (*this).age).write(age) };
-//     }
-//     fn new_init(slot: &mut Box<MaybeUninit<Cat>>, age: u8) {
-//         let this = (*slot).as_mut_ptr();
-//         let this = unsafe { &mut (*this).0 }.as_mut_ptr();
-//         unsafe { (&raw mut (*this).age).write(age) };
-//     }
-// }
+    fn age(&self) -> &u8 {
+        &self.age
+    }
+}
 
-fn main() {}
+fn main() {
+    // let mut cat = unsafe { Cat::spati_uninit_new() };
+    // cat.spati_init_new(12);
+    // assert_eq!(cat.age(), &12);
+}
