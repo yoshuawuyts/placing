@@ -76,3 +76,26 @@ pub(crate) fn set_path_generics(
     *segment = syn::parse2(quote! { #ident <#(#params,)* #param> }).unwrap();
     path
 }
+
+/// Determine what kind of constructor a function is
+pub(crate) fn constructor_type(sig: &syn::Signature, ident: &syn::Ident) -> ConstructorKind {
+    match &sig.output {
+        syn::ReturnType::Type(_, ty) => match &**ty {
+            syn::Type::Path(path) => match path_ident(&path.path).as_str() {
+                "Box < Self >" => ConstructorKind::Pointer,
+                "Self" => ConstructorKind::Inline,
+                s if s == ident.to_string() => ConstructorKind::Inline,
+                _ => ConstructorKind::Other,
+            },
+            _ => ConstructorKind::Other,
+        },
+        _ => ConstructorKind::Other,
+    }
+}
+
+/// Possible constructor kinds
+pub(crate) enum ConstructorKind {
+    Inline,
+    Pointer,
+    Other,
+}

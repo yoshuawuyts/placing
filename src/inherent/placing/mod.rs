@@ -2,14 +2,18 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{spanned::Spanned, FnArg, ImplItemFn, ReturnType};
 
-use crate::utils::expr_path_ident;
+use crate::utils::{self, expr_path_ident, path_ident};
 
 use super::ImplFns;
+
+mod inline;
+mod pointer;
 
 /// Rewrite a `#[super]` statement to create the inner type instead
 pub(crate) fn rewrite_super_constructor(
     output: &mut ImplFns,
     mut f: ImplItemFn,
+    ident: &syn::Ident,
 ) -> Result<(), TokenStream> {
     let fn_ident = f.sig.ident.clone();
 
@@ -18,9 +22,21 @@ pub(crate) fn rewrite_super_constructor(
         attrs,
         vis,
         defaultness: _,
-        sig: _,
+        sig,
         block: _,
     } = &f;
+
+    match utils::constructor_type(sig, ident) {
+        utils::ConstructorKind::Inline => todo!(),
+        utils::ConstructorKind::Pointer => todo!(),
+        utils::ConstructorKind::Other => {
+            return Err(quote::quote_spanned! { sig.output.span() =>
+                compile_error!("[E0009, spati] invalid constructor return type"),
+            }
+            .into())
+        }
+    }
+
     let uninit_ident = format_ident!("spati_uninit_{}", fn_ident);
     let uninit: syn::ImplItemFn = syn::parse2(quote! {
         #(#attrs)*
@@ -50,9 +66,9 @@ pub(crate) fn rewrite_super_constructor(
     // Rewrite the last expr in the function body
     match expr {
         // e.g. `Self { .. }`
-        syn::Expr::Struct(strukt) => *expr = struct_new_uninit(strukt),
+        syn::Expr::Struct(strukt) => *expr = inline::inline_new_init(strukt),
         // e.g. `Box::new(Self { .. })`
-        syn::Expr::Call(call) => *expr = smart_pointer_new_uninit(call)?,
+        syn::Expr::Call(call) => *expr = pointer::pointer_new_init(call)?,
         expr => return Err(quote::quote_spanned! { expr.span() =>
             compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
         }.into()),
@@ -70,63 +86,4 @@ pub(crate) fn rewrite_super_constructor(
 
     output.emplacing_constructors.push(f.into());
     Ok(())
-}
-
-/// Convert `Self { .. }` to writes into a `MaybeUninit<Self>`
-fn struct_new_uninit(strukt: &mut syn::ExprStruct) -> syn::Expr {
-    let assignments = strukt
-        .fields
-        .iter()
-        .map(|field| {
-            let key = &field.member;
-            let expr = &field.expr;
-            syn::parse2(quote! {{
-                unsafe { (&raw mut (*_this).#key).write(#expr) };
-            }})
-            .unwrap()
-        })
-        .collect::<Vec<syn::Block>>();
-
-    syn::parse2(quote! {{
-        let _this = self.inner.as_mut_ptr();
-        #(#assignments)*
-    }})
-    .unwrap()
-}
-
-/// Convert `Box::new(Self { .. })` to writes into a `Box<MaybeUninit<Self>>`
-fn smart_pointer_new_uninit(call: &mut syn::ExprCall) -> Result<syn::Expr, TokenStream> {
-    let syn::Expr::Path(path) = &*call.func else {
-        return Err(quote::quote_spanned! { call.span() =>
-            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` can only end with a fixed set of expressions"),
-        }.into());
-    };
-
-    match expr_path_ident(path).as_str() {
-        "Box :: new" => {}
-        _ => {
-            return Err(quote::quote_spanned! { call.span() =>
-                compile_error!("[E0008, spati] invalid smart pointer constructor"),
-            }
-            .into())
-        }
-    }
-
-    let expr = match call.args.first() {
-        Some(syn::Expr::Struct(expr)) => expr,
-        _ => {
-            return Err(quote::quote_spanned! { call.span() =>
-                compile_error!("[E0008, spati] invalid smart pointer constructor`"),
-            }
-            .into())
-        }
-    };
-
-    // TODO: validate we're constructing a type `Self` inside of here
-
-    Ok(syn::parse2(quote! {
-        let this = self.0.as_mut_ptr();
-        unsafe { (&raw mut (*this).age).write(age) };
-    })
-    .unwrap())
 }

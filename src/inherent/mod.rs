@@ -6,8 +6,8 @@ use syn::{spanned::Spanned, ImplItem, ImplItemFn, ItemImpl};
 use crate::utils::{create_maybe_generics, has_super, set_path_generics, strip_super};
 
 mod fn_kind;
-mod moving_constructor;
-mod placing_constructor;
+mod moving;
+mod placing;
 
 /// Process an impl block that carries the `#[spati]` notation
 pub(crate) fn process_impl(item: ItemImpl) -> TokenStream {
@@ -131,10 +131,10 @@ fn rewrite_fns(fn_items: Vec<ImplItemFn>, self_ident: &syn::Ident) -> Result<Imp
                 }.into());
             }
             (fn_kind::FunctionKind::Constructor(_heap_ty), false) => {
-                moving_constructor::rewrite_moving_constructor(&mut output, f, self_ident)?;
+                moving::rewrite_moving_constructor(&mut output, f, self_ident)?;
             }
             (fn_kind::FunctionKind::Constructor(_heap_ty), true) => {
-                placing_constructor::rewrite_super_constructor(&mut output, f.clone())?;
+                placing::rewrite_super_constructor(&mut output, f.clone(), self_ident)?;
                 // TODO: re-enable me
                 // moving_constructor::rewrite_moving_constructor(&mut output, f, self_ident)?;
             }
