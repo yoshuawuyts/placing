@@ -43,10 +43,9 @@ pub(crate) fn pointer_constructor(
         }.into());
     };
     *expr = pointer_new_init(call)?;
+    let constructor = init_constructor(fn_ident, sig, attrs, vis, block);
+    output.emplacing_constructors.push(constructor.into());
 
-    let init = init_constructor(fn_ident, sig, attrs, vis, block);
-
-    output.emplacing_constructors.push(init.into());
     Ok(())
 }
 
