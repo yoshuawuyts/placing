@@ -1,21 +1,41 @@
-#[placing::emplace]
+use placing::placing;
+
+#[placing]
 struct Bed {
-    #[emplace]
+    #[placing]
     cat: Cat,
 }
 
-#[placing::emplace]
+#[placing]
+impl Bed {
+    #[placing]
+    fn new() -> Self {
+        Self {
+            #[placing]
+            cat: Cat::new(12),
+        }
+    }
+
+    fn cat(&self) -> &Cat {
+        &self.cat
+    }
+}
+
+#[placing]
 struct Cat {
     age: u8,
 }
 
-#[placing::emplace]
+#[placing]
 impl Cat {
-    fn age(&self) -> &u8 {
-        &self.age
+    #[placing]
+    fn new(age: u8) -> Self {
+        Self { age }
     }
 }
 
 fn main() {
-    // let cat = placing::new!(Cat, 12);
+    let mut bed = unsafe { Bed::placing_uninit_new() };
+    unsafe { bed.placing_init_new() };
+    assert_eq!(bed.cat().age(), &12);
 }
