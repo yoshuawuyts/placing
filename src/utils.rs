@@ -82,7 +82,7 @@ pub(crate) fn constructor_type(sig: &syn::Signature, ident: &syn::Ident) -> Cons
     match &sig.output {
         syn::ReturnType::Type(_, ty) => match &**ty {
             syn::Type::Path(path) => match path_ident(&path.path).as_str() {
-                "Box < Self >" => ConstructorKind::Pointer,
+                "Box < Self >" => ConstructorKind::Pointer(PointerKind::Box),
                 "Self" => ConstructorKind::Inline,
                 s if s == ident.to_string() => ConstructorKind::Inline,
                 _ => ConstructorKind::Other,
@@ -96,6 +96,10 @@ pub(crate) fn constructor_type(sig: &syn::Signature, ident: &syn::Ident) -> Cons
 /// Possible constructor kinds
 pub(crate) enum ConstructorKind {
     Inline,
-    Pointer,
+    Pointer(PointerKind),
     Other,
+}
+
+pub(crate) enum PointerKind {
+    Box,
 }
