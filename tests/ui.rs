@@ -1,3 +1,4 @@
+// set `TRYBUILD=overwrite` to update the stdout output
 #[test]
 fn ui() {
     let t = trybuild::TestCases::new();

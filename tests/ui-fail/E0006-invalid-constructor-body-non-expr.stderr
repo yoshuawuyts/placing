@@ -24,7 +24,7 @@ error: macro expansion ignores token `,` and any following
   |
   = note: the usage of `spati::spati!` is likely invalid in item context
 
-error: [E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression
+error: [E0006, spati] invalid constructor body: expected a struct expression as the last statement
  --> tests/ui-fail/E0006-invalid-constructor-body-non-expr.rs:8:9
   |
 8 |         todo!()
