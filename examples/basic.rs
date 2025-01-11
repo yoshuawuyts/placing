@@ -1,9 +1,9 @@
-#[spati::spati]
+#[placing::placing]
 struct Cat {
     age: u8,
 }
 
-#[spati::spati]
+#[placing::placing]
 impl Cat {
     #[placing]
     fn new(age: u8) -> Box<Self> {
@@ -16,7 +16,7 @@ impl Cat {
 }
 
 fn main() {
-    let mut cat = unsafe { Cat::spati_uninit_new() };
-    unsafe { Cat::spati_init_new(&mut cat, 12) };
+    let mut cat = unsafe { Cat::placing_uninit_new() };
+    unsafe { Cat::placing_init_new(&mut cat, 12) };
     assert_eq!(cat.age(), &12);
 }

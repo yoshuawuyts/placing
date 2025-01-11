@@ -11,11 +11,11 @@ mod fn_kind;
 mod moving;
 mod placing;
 
-/// Process an impl block that carries the `#[spati]` notation
+/// Process an impl block that carries the `#[placing]` notation
 pub(crate) fn process_impl(item: ItemImpl) -> TokenStream {
     if item.trait_.is_some() {
         return quote::quote! {
-            compile_error!("`[spati, E0002] trait impls unsupported: macro `spati` can only be used on bare `impl {}` blocks");
+            compile_error!("`[placing, E0002] trait impls unsupported: macro `placing` can only be used on bare `impl {}` blocks");
         }.into();
     }
 
@@ -37,7 +37,7 @@ pub(crate) fn process_impl(item: ItemImpl) -> TokenStream {
     let self_ty = match *self_ty {
         syn::Type::Path(type_path) => type_path,
         _ => return quote::quote_spanned! { impl_token.span() =>
-            compile_error!("[E0003, spati] invalid impl target: `spati` doesn't work for impls on tuples, slices, or other non-path types"),
+            compile_error!("[E0003, placing] invalid impl target: `placing` doesn't work for impls on tuples, slices, or other non-path types"),
         }.into(),
     };
     let self_ident = &self_ty.path.segments.last().unwrap().ident.clone();
@@ -124,12 +124,12 @@ fn rewrite_fns(fn_items: Vec<ImplItemFn>, self_ident: &syn::Ident) -> Result<Imp
             }
             (fn_kind::FunctionKind::Static, true) => {
                 return Err(quote::quote_spanned! { f.sig.span() =>
-                    compile_error!("[E0007, spati] invalid placing target: the #[placing] attribute cannot be applied to static functions"),
+                    compile_error!("[E0007, placing] invalid placing target: the #[placing] attribute cannot be applied to static functions"),
                 }.into());
             }
             (fn_kind::FunctionKind::Method, true) => {
                 return Err(quote::quote_spanned! { f.sig.span() =>
-                    compile_error!("[E0007, spati] invalid placing target: the #[placing] attribute cannot be applied to static functions"),
+                    compile_error!("[E0007, placing] invalid placing target: the #[placing] attribute cannot be applied to static functions"),
                 }.into());
             }
             (fn_kind::FunctionKind::Constructor(_heap_ty), false) => {

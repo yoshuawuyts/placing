@@ -1,15 +1,15 @@
-#[spati::emplace]
+#[placing::emplace]
 struct Bed {
     #[emplace]
     cat: Cat,
 }
 
-#[spati::emplace]
+#[placing::emplace]
 struct Cat {
     age: u8,
 }
 
-#[spati::emplace]
+#[placing::emplace]
 impl Cat {
     fn age(&self) -> &u8 {
         &self.age
@@ -17,5 +17,5 @@ impl Cat {
 }
 
 fn main() {
-    // let cat = spati::new!(Cat, 12);
+    // let cat = placing::new!(Cat, 12);
 }

@@ -5,7 +5,7 @@ use syn::ItemStruct;
 
 use crate::utils::create_maybe_generics;
 
-/// Process an impl block that carries the `#[spati]` notation
+/// Process an impl block that carries the `#[placing]` notation
 pub(crate) fn process_struct(item: ItemStruct) -> TokenStream {
     // We need all the impl components to later recreate it
     // and fill it with our own methods

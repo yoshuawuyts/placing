@@ -2,7 +2,7 @@ trait Meow {
     type Sound;
 }
 
-#[spati::spati]
+#[placing::placing]
 impl [Cat] {}
 
 fn main() {}

@@ -19,17 +19,17 @@ help: add a semicolon
 error: macro expansion ignores token `,` and any following
   --> tests/ui-fail/E0006-invalid-constructor-body-non-struct.rs:8:9
    |
-4  |   #[spati::spati]
-   |   --------------- caused by the macro expansion here
+4  |   #[placing::placing]
+   |   ------------------- caused by the macro expansion here
 ...
 8  | /         {
 9  | |             Self {}
 10 | |         }
    | |_________^
    |
-   = note: the usage of `spati::spati!` is likely invalid in item context
+   = note: the usage of `placing::placing!` is likely invalid in item context
 
-error: [E0006, spati] invalid constructor body: expected a struct expression as the last statement
+error: [E0006, placing] invalid constructor body: expected a struct expression as the last statement
   --> tests/ui-fail/E0006-invalid-constructor-body-non-struct.rs:8:9
    |
 8  | /         {

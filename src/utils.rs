@@ -28,7 +28,7 @@ pub(crate) fn has_placing_attr(attrs: &[Attribute]) -> Result<bool, TokenStream>
         return match &attr.meta {
             syn::Meta::Path(_) => Ok(true),
             _ => Err(quote::quote_spanned! { attr.span() =>
-                compile_error!("[E0004, spati] invalid attr: the #[placing] attribute does not support any additional arguments"),
+                compile_error!("[E0004, placing] invalid attr: the #[placing] attribute does not support any additional arguments"),
             }.into()),
         };
     }

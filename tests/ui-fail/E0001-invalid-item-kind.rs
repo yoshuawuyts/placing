@@ -1,4 +1,4 @@
-#[spati::spati]
+#[placing::placing]
 union Cat {
     age: u8,
 }

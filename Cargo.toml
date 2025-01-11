@@ -1,9 +1,9 @@
 [package]
-name = "spati"
+name = "placing"
 version = "1.0.0"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/yoshuawuyts/spati"
-documentation = "https://docs.rs/spati"
+repository = "https://github.com/yoshuawuyts/placing"
+documentation = "https://docs.rs/placing"
 description = "A prototype notation for referentially stable constructors"
 readme = "README.md"
 edition = "2021"

@@ -2,7 +2,7 @@
 //!
 //! ## Why the name?
 //!
-//! A spati is a typical east-German convenience store. It's a staple in Berlin,
+//! A placing is a typical east-German convenience store. It's a staple in Berlin,
 //! and it doesn't seem to be going anywhere. Just like the values created by
 //! this crate.
 //!
@@ -26,13 +26,13 @@ mod utils;
 
 /// Enable methods to be constructed and operate in-place
 #[proc_macro_attribute]
-pub fn spati(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn placing(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as syn::Item);
     match item {
         syn::Item::Impl(item) => inherent::process_impl(item),
         syn::Item::Struct(item) => strukt::process_struct(item),
         _ => quote::quote! {
-            compile_error!("`[spati, E0001] invalid item kind: macro `spati` can only be used on inherent impls and structs");
+            compile_error!("`[placing, E0001] invalid item kind: macro `placing` can only be used on inherent impls and structs");
         }.into()
     }
 }

@@ -19,7 +19,7 @@ pub(crate) fn rewrite_placing_constructor(
         utils::ConstructorKind::Pointer(kind) => pointer::pointer_constructor(output, f, kind),
         utils::ConstructorKind::Other => {
             return Err(quote::quote_spanned! { f.sig.output.span() =>
-                compile_error!("[E0009, spati] invalid constructor return type"),
+                compile_error!("[E0009, placing] invalid constructor return type"),
             }
             .into())
         }

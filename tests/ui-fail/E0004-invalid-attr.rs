@@ -1,7 +1,7 @@
-#[spati::spati]
+#[placing::placing]
 struct Cat;
 
-#[spati::spati]
+#[placing::placing]
 impl Cat {
     #[placing(invalid)]
     fn list(&self) -> Self {

@@ -16,15 +16,15 @@ help: add a semicolon
 error: macro expansion ignores token `,` and any following
   --> tests/ui-fail/E0008-invalid-pointer-constructor.rs:10:9
    |
-6  | #[spati::spati]
-   | --------------- caused by the macro expansion here
+6  | #[placing::placing]
+   | ------------------- caused by the macro expansion here
 ...
 10 |         Box::new()
    |         ^^^
    |
-   = note: the usage of `spati::spati!` is likely invalid in item context
+   = note: the usage of `placing::placing!` is likely invalid in item context
 
-error: [E0008, spati] invalid pointer constructor`
+error: [E0008, placing] invalid pointer constructor`
   --> tests/ui-fail/E0008-invalid-pointer-constructor.rs:10:9
    |
 10 |         Box::new()

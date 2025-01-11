@@ -1,7 +1,7 @@
-error: `[spati, E0002] trait impls unsupported: macro `spati` can only be used on bare `impl {}` blocks
+error: `[placing, E0002] trait impls unsupported: macro `placing` can only be used on bare `impl {}` blocks
  --> tests/ui-fail/E0002-trait-impls-unsupported.rs:7:1
   |
-7 | #[spati::spati]
-  | ^^^^^^^^^^^^^^^
+7 | #[placing::placing]
+  | ^^^^^^^^^^^^^^^^^^^
   |
-  = note: this error originates in the attribute macro `spati::spati` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the attribute macro `placing::placing` (in Nightly builds, run with -Z macro-backtrace for more info)

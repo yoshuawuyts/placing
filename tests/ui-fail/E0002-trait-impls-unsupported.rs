@@ -4,7 +4,7 @@ struct Cat {
 
 trait Meow {}
 
-#[spati::spati]
+#[placing::placing]
 impl Meow for Cat {}
 
 fn main() {}

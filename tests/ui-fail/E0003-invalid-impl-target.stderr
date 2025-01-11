@@ -16,14 +16,14 @@ help: add a semicolon
 error: macro expansion ignores token `,` and any following
  --> tests/ui-fail/E0003-invalid-impl-target.rs:6:1
   |
-5 | #[spati::spati]
-  | --------------- caused by the macro expansion here
+5 | #[placing::placing]
+  | ------------------- caused by the macro expansion here
 6 | impl [Cat] {}
   | ^^^^
   |
-  = note: the usage of `spati::spati!` is likely invalid in item context
+  = note: the usage of `placing::placing!` is likely invalid in item context
 
-error: [E0003, spati] invalid impl target: `spati` doesn't work for impls on tuples, slices, or other non-path types
+error: [E0003, placing] invalid impl target: `placing` doesn't work for impls on tuples, slices, or other non-path types
  --> tests/ui-fail/E0003-invalid-impl-target.rs:6:1
   |
 6 | impl [Cat] {}

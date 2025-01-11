@@ -1,7 +1,7 @@
-error: `[spati, E0001] invalid item kind: macro `spati` can only be used on inherent impls and structs
+error: `[placing, E0001] invalid item kind: macro `placing` can only be used on inherent impls and structs
  --> tests/ui-fail/E0001-invalid-item-kind.rs:1:1
   |
-1 | #[spati::spati]
-  | ^^^^^^^^^^^^^^^
+1 | #[placing::placing]
+  | ^^^^^^^^^^^^^^^^^^^
   |
-  = note: this error originates in the attribute macro `spati::spati` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the attribute macro `placing::placing` (in Nightly builds, run with -Z macro-backtrace for more info)

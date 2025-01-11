@@ -1,7 +1,7 @@
-#[spati::spati]
+#[placing::placing]
 struct Cat {}
 
-#[spati::spati]
+#[placing::placing]
 impl Cat {
     const NAME: &str = "chashu";
 }

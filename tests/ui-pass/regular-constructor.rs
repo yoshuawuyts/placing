@@ -1,9 +1,9 @@
-#[spati::spati]
+#[placing::placing]
 struct Cat {
     age: u8,
 }
 
-#[spati::spati]
+#[placing::placing]
 impl Cat {
     fn new(age: u8) -> Self {
         Self { age }

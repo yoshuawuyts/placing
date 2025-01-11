@@ -1,4 +1,4 @@
-#[spati::spati]
+#[placing::placing]
 struct Cat<K, J, const N: usize>
 where
     J: Send,
@@ -8,7 +8,7 @@ where
     foo: [u8; N],
 }
 
-#[spati::spati]
+#[placing::placing]
 impl<K, J, const N: usize> Cat<K, J, N> where J: Send {}
 
 fn main() {}
