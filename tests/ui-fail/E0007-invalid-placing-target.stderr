@@ -1,5 +1,5 @@
 error: macros that expand to items must be delimited with braces or followed by a semicolon
- --> tests/ui-fail/E0007-invalid-super-target.rs:7:5
+ --> tests/ui-fail/E0007-invalid-placing-target.rs:7:5
   |
 7 |     fn new(&self) {}
   |     ^^
@@ -14,7 +14,7 @@ help: add a semicolon
   |       +
 
 error: macro expansion ignores token `,` and any following
- --> tests/ui-fail/E0007-invalid-super-target.rs:7:5
+ --> tests/ui-fail/E0007-invalid-placing-target.rs:7:5
   |
 4 | #[spati::spati]
   | --------------- caused by the macro expansion here
@@ -24,8 +24,8 @@ error: macro expansion ignores token `,` and any following
   |
   = note: the usage of `spati::spati!` is likely invalid in item context
 
-error: [E0007, spati] invalid super target: the #[super] attribute cannot be applied to static functions
- --> tests/ui-fail/E0007-invalid-super-target.rs:7:5
+error: [E0007, spati] invalid placing target: the #[placing] attribute cannot be applied to static functions
+ --> tests/ui-fail/E0007-invalid-placing-target.rs:7:5
   |
 7 |     fn new(&self) {}
   |     ^^

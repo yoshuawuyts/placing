@@ -3,7 +3,9 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{spanned::Spanned, ImplItem, ImplItemFn, ItemImpl};
 
-use crate::utils::{create_maybe_generics, has_super, set_path_generics, strip_super};
+use crate::utils::{
+    create_maybe_generics, has_placing_attr, set_path_generics, strip_placing_attr,
+};
 
 mod fn_kind;
 mod moving;
@@ -109,11 +111,11 @@ fn rewrite_fns(fn_items: Vec<ImplItemFn>, self_ident: &syn::Ident) -> Result<Imp
     for mut f in fn_items {
         // Process and identify the function
         let fn_kind = fn_kind::FunctionKind::from_fn(&f.sig, self_ident);
-        let has_super = has_super(&f.attrs)?;
-        strip_super(&mut f.attrs);
+        let has_placing = has_placing_attr(&f.attrs)?;
+        strip_placing_attr(&mut f.attrs);
 
         // Validate the function bodies and rewrite them where needed.
-        match (&fn_kind, has_super) {
+        match (&fn_kind, has_placing) {
             (fn_kind::FunctionKind::Static, false) => {
                 output.statics.push(f.into());
             }
@@ -122,19 +124,19 @@ fn rewrite_fns(fn_items: Vec<ImplItemFn>, self_ident: &syn::Ident) -> Result<Imp
             }
             (fn_kind::FunctionKind::Static, true) => {
                 return Err(quote::quote_spanned! { f.sig.span() =>
-                    compile_error!("[E0007, spati] invalid super target: the #[super] attribute cannot be applied to static functions"),
+                    compile_error!("[E0007, spati] invalid placing target: the #[placing] attribute cannot be applied to static functions"),
                 }.into());
             }
             (fn_kind::FunctionKind::Method, true) => {
                 return Err(quote::quote_spanned! { f.sig.span() =>
-                    compile_error!("[E0007, spati] invalid super target: the #[super] attribute cannot be applied to static functions"),
+                    compile_error!("[E0007, spati] invalid placing target: the #[placing] attribute cannot be applied to static functions"),
                 }.into());
             }
             (fn_kind::FunctionKind::Constructor(_heap_ty), false) => {
                 moving::rewrite_moving_constructor(&mut output, f, self_ident)?;
             }
             (fn_kind::FunctionKind::Constructor(_heap_ty), true) => {
-                placing::rewrite_super_constructor(&mut output, f.clone(), self_ident)?;
+                placing::rewrite_placing_constructor(&mut output, f.clone(), self_ident)?;
                 // TODO: re-enable me
                 // moving_constructor::rewrite_moving_constructor(&mut output, f, self_ident)?;
             }

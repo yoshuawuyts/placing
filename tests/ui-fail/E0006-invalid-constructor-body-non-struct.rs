@@ -3,7 +3,7 @@ struct Cat;
 
 #[spati::spati]
 impl Cat {
-    #[super]
+    #[placing]
     fn new() -> Self {
         {
             Self {}

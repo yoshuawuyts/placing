@@ -1,5 +1,5 @@
 error: macros that expand to items must be delimited with braces or followed by a semicolon
-  --> tests/ui-fail/E0008-invalid-smart-pointer-constructor.rs:10:9
+  --> tests/ui-fail/E0008-invalid-pointer-constructor.rs:10:9
    |
 10 |         Box::new()
    |         ^^^
@@ -14,7 +14,7 @@ help: add a semicolon
    |            +
 
 error: macro expansion ignores token `,` and any following
-  --> tests/ui-fail/E0008-invalid-smart-pointer-constructor.rs:10:9
+  --> tests/ui-fail/E0008-invalid-pointer-constructor.rs:10:9
    |
 6  | #[spati::spati]
    | --------------- caused by the macro expansion here
@@ -25,7 +25,7 @@ error: macro expansion ignores token `,` and any following
    = note: the usage of `spati::spati!` is likely invalid in item context
 
 error: [E0008, spati] invalid pointer constructor`
-  --> tests/ui-fail/E0008-invalid-smart-pointer-constructor.rs:10:9
+  --> tests/ui-fail/E0008-invalid-pointer-constructor.rs:10:9
    |
 10 |         Box::new()
    |         ^^^

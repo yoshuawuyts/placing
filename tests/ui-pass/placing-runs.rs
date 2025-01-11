@@ -5,9 +5,9 @@ struct Cat {
 
 #[spati::spati]
 impl Cat {
-    #[super]
-    fn new(age: u8) -> Box<Self> {
-        Box::new(Self { age })
+    #[placing]
+    fn new(age: u8) -> Self {
+        Self { age }
     }
 
     fn age(&self) -> &u8 {

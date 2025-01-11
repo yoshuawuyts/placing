@@ -4,7 +4,7 @@ use syn::{spanned::Spanned, ImplItemFn};
 
 use super::ImplFns;
 
-/// Rewrite a non-`#[super]` statement to create the inner type instead
+/// Rewrite a non-`#[placing]` statement to create the inner type instead
 pub(crate) fn rewrite_moving_constructor(
     output: &mut ImplFns,
     mut f: ImplItemFn,
@@ -14,10 +14,10 @@ pub(crate) fn rewrite_moving_constructor(
     let expr = match f.block.stmts.last_mut() {
         Some(syn::Stmt::Expr(expr, _)) => expr,
         Some(stmt) => return Err(quote::quote_spanned! { stmt.span() =>
-            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
+            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[placing]` have to end with a struct expression"),
         }.into()),
         None => return Err(quote::quote_spanned! { f.block.span() =>
-            compile_error!("[E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty"),
+            compile_error!("[E0005, spati] empty constructor body: functions marked `#[placing]` cannot be empty"),
         }.into()),
     };
 
@@ -31,7 +31,7 @@ pub(crate) fn rewrite_moving_constructor(
             }).unwrap();
         }
         expr => return Err(quote::quote_spanned! { expr.span() =>
-            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a struct expression"),
+            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[placing]` have to end with a struct expression"),
         }.into()),
     };
     output.non_emplacing_constructors.push(f.into());

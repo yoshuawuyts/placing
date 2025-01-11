@@ -24,7 +24,7 @@ error: macro expansion ignores token `,` and any following
   |
   = note: the usage of `spati::spati!` is likely invalid in item context
 
-error: [E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty
+error: [E0005, spati] empty constructor body: functions marked `#[placing]` cannot be empty
  --> tests/ui-fail/E0005-empty-constructor-body.rs:7:22
   |
 7 |     fn new() -> Self {}

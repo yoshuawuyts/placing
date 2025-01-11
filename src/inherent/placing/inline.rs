@@ -23,10 +23,10 @@ pub(crate) fn inline_constructor(output: &mut ImplFns, f: ImplItemFn) -> Result<
     let expr = match block.stmts.last_mut() {
         Some(syn::Stmt::Expr(expr, _)) => expr,
         Some(stmt) => return Err(quote::quote_spanned! { stmt.span() =>
-            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a constructor"),
+            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[placing]` have to end with a constructor"),
         }.into()),
         None => return Err(quote::quote_spanned! { block.span() =>
-            compile_error!("[E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty"),
+            compile_error!("[E0005, spati] empty constructor body: functions marked `#[placing]` cannot be empty"),
         }.into()),
     };
 

@@ -29,10 +29,10 @@ pub(crate) fn pointer_constructor(
     let expr = match block.stmts.last_mut() {
         Some(syn::Stmt::Expr(expr, _)) => expr,
         Some(stmt) => return Err(quote::quote_spanned! { stmt.span() =>
-            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` have to end with a constructor"),
+            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[placing]` have to end with a constructor"),
         }.into()),
         None => return Err(quote::quote_spanned! { block.span() =>
-            compile_error!("[E0005, spati] empty constructor body: functions marked `#[super]` cannot be empty"),
+            compile_error!("[E0005, spati] empty constructor body: functions marked `#[placing]` cannot be empty"),
         }.into()),
     };
 
@@ -103,7 +103,7 @@ fn uninit_constructor(
 pub(crate) fn pointer_new_init(call: &mut syn::ExprCall) -> Result<syn::Expr, TokenStream> {
     let syn::Expr::Path(path) = &*call.func else {
         return Err(quote::quote_spanned! { call.span() =>
-            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[super]` can only end with a fixed set of expressions"),
+            compile_error!("[E0006, spati] invalid constructor body: functions marked `#[placing]` can only end with a fixed set of expressions"),
         }.into());
     };
 

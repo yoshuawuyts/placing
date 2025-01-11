@@ -8,8 +8,8 @@ use super::ImplFns;
 mod inline;
 mod pointer;
 
-/// Rewrite a `#[super]` statement to create the inner type instead
-pub(crate) fn rewrite_super_constructor(
+/// Rewrite a `#[placing]` statement to create the inner type instead
+pub(crate) fn rewrite_placing_constructor(
     output: &mut ImplFns,
     f: ImplItemFn,
     ident: &syn::Ident,

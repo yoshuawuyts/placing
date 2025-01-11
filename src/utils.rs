@@ -14,21 +14,21 @@ pub(crate) fn create_maybe_generics(generics: &syn::Generics) -> syn::Generics {
     outer_generics
 }
 
-/// Checks whether there is a `#[super]` attribute in the list.
+/// Checks whether there is a `#[placing]` attribute in the list.
 ///
 /// # Errors
 ///
 /// This function will return an error if the attribute is malformed
-pub(crate) fn has_super(attrs: &[Attribute]) -> Result<bool, TokenStream> {
+pub(crate) fn has_placing_attr(attrs: &[Attribute]) -> Result<bool, TokenStream> {
     for attr in attrs.iter() {
-        if path_ident(attr.path()) != "super" {
+        if path_ident(attr.path()) != "placing" {
             continue;
         }
 
         return match &attr.meta {
             syn::Meta::Path(_) => Ok(true),
             _ => Err(quote::quote_spanned! { attr.span() =>
-                compile_error!("[E0004, spati] invalid attr: the #[super] attribute does not support any additional arguments"),
+                compile_error!("[E0004, spati] invalid attr: the #[placing] attribute does not support any additional arguments"),
             }.into()),
         };
     }
@@ -45,8 +45,8 @@ pub(crate) fn expr_path_ident(path: &ExprPath) -> String {
     path.to_token_stream().to_string()
 }
 
-pub(crate) fn strip_super(attrs: &mut Vec<Attribute>) {
-    attrs.retain(|attr| path_ident(attr.path()) != "super")
+pub(crate) fn strip_placing_attr(attrs: &mut Vec<Attribute>) {
+    attrs.retain(|attr| path_ident(attr.path()) != "placing")
 }
 
 pub(crate) fn set_path_generics(

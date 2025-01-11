@@ -5,8 +5,9 @@ struct Cat {
 
 #[spati::spati]
 impl Cat {
-    #[super]
+    #[placing]
     fn new(age: u8) -> Self {
+        let age = age * 2;
         Self { age }
     }
 
@@ -15,4 +16,8 @@ impl Cat {
     }
 }
 
-fn main() {}
+fn main() {
+    let mut cat = unsafe { Cat::spati_uninit_new() };
+    unsafe { cat.spati_init_new(12) };
+    assert_eq!(cat.age(), &24);
+}

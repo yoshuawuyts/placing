@@ -3,12 +3,12 @@ struct Cat;
 
 #[spati::spati]
 impl Cat {
-    #[super(invalid)]
+    #[placing(invalid)]
     fn list(&self) -> Self {
         todo!()
     }
 
-    #[super = "invalid"]
+    #[placing = "invalid"]
     fn path(&self) -> Self {
         todo!()
     }
