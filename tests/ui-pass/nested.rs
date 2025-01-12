@@ -35,7 +35,7 @@ impl Cat {
 }
 
 fn main() {
-    let mut bed = unsafe { Bed::placing_uninit_new() };
-    unsafe { bed.placing_init_new() };
+    let mut bed = unsafe { Bed::new_uninit() };
+    unsafe { bed.new_init() };
     assert_eq!(bed.cat().age(), &12);
 }

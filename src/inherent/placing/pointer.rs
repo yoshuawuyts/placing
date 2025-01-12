@@ -57,7 +57,7 @@ fn init_constructor(
     block: syn::Block,
 ) -> ImplItemFn {
     // Rewrite the existing constructors signature to emplace
-    let init_ident = format_ident!("placing_init_{}", fn_ident);
+    let init_ident = format_ident!("{}_init", fn_ident);
     let inputs = sig.inputs.iter();
     let statements = &block.stmts;
 
@@ -82,7 +82,7 @@ fn uninit_constructor(
     vis: &syn::Visibility,
     _kind: PointerKind,
 ) -> ImplItemFn {
-    let uninit_ident = format_ident!("placing_uninit_{}", fn_ident);
+    let uninit_ident = format_ident!("{}_uninit", fn_ident);
 
     let uninit: syn::ImplItemFn = syn::parse2(quote! {
         #(#attrs)*

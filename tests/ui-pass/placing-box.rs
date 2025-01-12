@@ -16,7 +16,7 @@ impl Cat {
 }
 
 fn main() {
-    let mut cat = unsafe { Cat::placing_uninit_new() };
-    unsafe { cat.placing_init_new(12) };
+    let mut cat = unsafe { Cat::new_uninit() };
+    unsafe { cat.new_init(12) };
     assert_eq!(cat.age(), &12);
 }

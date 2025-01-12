@@ -24,7 +24,7 @@ mod inherent;
 mod strukt;
 mod utils;
 
-/// Enable methods to be constructed and operate in-place
+/// Enable methods to be constructed and operate in-place.
 #[proc_macro_attribute]
 pub fn placing(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as syn::Item);
