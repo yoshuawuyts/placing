@@ -1,11 +1,5 @@
 //! A prototype notation for referentially stable constructors
 //!
-//! ## Why the name?
-//!
-//! A placing is a typical east-German convenience store. It's a staple in Berlin,
-//! and it doesn't seem to be going anywhere. Just like the values created by
-//! this crate.
-//!
 //! ## Tasks
 //!
 //! - [ ] support structs
