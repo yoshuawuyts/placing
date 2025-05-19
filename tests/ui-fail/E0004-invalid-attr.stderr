@@ -6,14 +6,15 @@ error: macros that expand to items must be delimited with braces or followed by 
   |
 help: change the delimiters to curly braces
   |
-6 |     {}[placing(invalid)]
-  |     ~
+6 -     #[placing(invalid)]
+6 +     {}[placing(invalid)]
+  |
 help: add a semicolon
   |
 6 |     #;[placing(invalid)]
   |      +
 
-error: macro expansion ignores token `,` and any following
+error: macro expansion ignores `,` and any tokens following
  --> tests/ui-fail/E0004-invalid-attr.rs:6:5
   |
 4 | #[placing::placing]

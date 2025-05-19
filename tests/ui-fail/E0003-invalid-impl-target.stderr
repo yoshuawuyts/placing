@@ -6,14 +6,15 @@ error: macros that expand to items must be delimited with braces or followed by 
   |
 help: change the delimiters to curly braces
   |
-6 | {} [Cat] {}
-  | ~
+6 - impl [Cat] {}
+6 + {} [Cat] {}
+  |
 help: add a semicolon
   |
 6 | impl; [Cat] {}
   |     +
 
-error: macro expansion ignores token `,` and any following
+error: macro expansion ignores `,` and any tokens following
  --> tests/ui-fail/E0003-invalid-impl-target.rs:6:1
   |
 5 | #[placing::placing]

@@ -16,7 +16,7 @@ help: add a semicolon
 10 |         };
    |          +
 
-error: macro expansion ignores token `,` and any following
+error: macro expansion ignores `,` and any tokens following
   --> tests/ui-fail/E0006-invalid-constructor-body-non-struct.rs:8:9
    |
 4  |   #[placing::placing]

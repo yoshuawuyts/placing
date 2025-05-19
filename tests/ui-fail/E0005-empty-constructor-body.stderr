@@ -6,14 +6,13 @@ error: macros that expand to items must be delimited with braces or followed by 
   |
 help: change the delimiters to curly braces
   |
-7 |     fn new() -> Self {}
-  |                      ~
+  |
 help: add a semicolon
   |
 7 |     fn new() -> Self {};
   |                        +
 
-error: macro expansion ignores token `,` and any following
+error: macro expansion ignores `,` and any tokens following
  --> tests/ui-fail/E0005-empty-constructor-body.rs:7:22
   |
 4 | #[placing::placing]

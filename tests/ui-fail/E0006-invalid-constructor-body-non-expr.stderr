@@ -6,14 +6,15 @@ error: macros that expand to items must be delimited with braces or followed by 
   |
 help: change the delimiters to curly braces
   |
-8 |         {}!()
-  |         ~
+8 -         todo!()
+8 +         {}!()
+  |
 help: add a semicolon
   |
 8 |         todo;!()
   |             +
 
-error: macro expansion ignores token `,` and any following
+error: macro expansion ignores `,` and any tokens following
  --> tests/ui-fail/E0006-invalid-constructor-body-non-expr.rs:8:9
   |
 4 | #[placing::placing]
