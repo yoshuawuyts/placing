@@ -50,7 +50,7 @@ $ cargo add placing
 
 This crate enables address-sensitive types to be constructed. That is: types
 whose address in memory can't change over time. As well as types that might OOM
-if they are constructed on the stacke before being copied to the heap. To start
+if they are constructed on the stack before being copied to the heap. To start
 we create a new type with the `placing` attribute macro. This sets up the right
 internal type hierarchy for us.
 
